@@ -40,10 +40,10 @@ body['name'] = "Landuse"
 body['schemaId'] = "8102046857967243751-242ac1110-0001-013"
 body['permissions']=[pem1,pem2,pem4]
 
-def createMetadata(i,j,f,x,y):
+def createMetadata(i,j,f,x,y,dataset_name):
   coord = transform(p1,p2,x[i],y[j])
   js ={}
-  js['name'] = "test7"
+  js['name'] = dataset_name
   js['longitude'] = coord[0]
   js['latitude'] = coord[1]
   js['x'] = i
@@ -54,11 +54,11 @@ def createMetadata(i,j,f,x,y):
   js['recharge_scenario1'] = f.variables['recharge'][1,:,j,i].tolist()
   body['value'] = js
   body['geospatial']= True;
-  with open("landuse"+str(j)+".json", 'w') as outfile:
+  with open("/tmp/landuse"+str(j)+".json", 'w') as outfile:
       json.dump(body, outfile)
   #print('x: '+str(i)+',j: '+str(j))
   #print(js['recharge_scenario0']) 
-  call("~/apps/cli/bin/metadata-addupdate -F landuse"+str(j)+".json;rm landuse"+str(j)+".json", shell=True)
+  call("~/apps/cli/bin/metadata-addupdate -F /tmp/landuse"+str(j)+".json;rm /tmp/landuse"+str(j)+".json", shell=True)
 
 
 def main(argv):
@@ -66,15 +66,18 @@ def main(argv):
    x_divisor = 1
    inputfile =""
    threads = 1
+   name = "test-set"
    try:
-      opts, args = getopt.getopt(argv,"ho:d:i:t",["offset=","divisor=","ifile=","threads="])
+      opts, args = getopt.getopt(argv,"hn:o:d:i:t",["name=","offset=","divisor=","ifile=","threads="])
    except getopt.GetoptError:
-      print('TRY ingest_nc_to_ike.py -o <x offset> -d <x divisor> -i <inputfile> -t <threads>')
+      print('TRY ingest_nc_to_ike.py -n <dataset name> -o <x offset> -d <x divisor> -i <inputfile> -t <threads>')
       sys.exit(2)
    for opt, arg in opts:
       if opt == '-h':
-         print ('ingest_nc_to_ike.py -o <x offset> -d <x divisor> -i <inputfile> -t <threads>')
+         print ('ingest_nc_to_ike.py -n <dataset name> -o <x offset> -d <x divisor> -i <inputfile> -t <threads>')
          sys.exit()
+      elif opt in ("-n", "--name"):
+         name= arg
       elif opt in ("-o", "--offset"):
          x_offset= int(arg)
       elif opt in ("-d", "--divisor"):
@@ -107,8 +110,8 @@ def main(argv):
          print(str(i))
          #loop through y (lat)
          #for j in range(0, len(y)):
-         #call("~/apps/cli/bin/auth-tokens-refresh",shell=True)
-         #Parallel(n_jobs=threads)(delayed(createMetadata)(i,j,f,x,y) for j in range(0,len(y)))
+         call("~/apps/cli/bin/auth-tokens-refresh",shell=True)
+         Parallel(n_jobs=threads)(delayed(createMetadata)(i,j,f,x,y) for j in range(0,len(y)))
    else:
       print("x_divisor must be greater than 0")
 
