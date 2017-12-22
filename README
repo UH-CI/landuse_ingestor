@@ -1,0 +1,1 @@
+Ingestion script for reading landuse NetCDF data and serializing to JSON and storing in the IKE Gateway.
