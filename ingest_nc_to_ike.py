@@ -65,9 +65,9 @@ def main(argv):
    x_offset = 0
    x_divisor = 1
    inputfile =""
-   threads=1
+   threads = 1
    try:
-      opts, args = getopt.getopt(argv,"hi:o:",["offset=","divisor=","ifile=","threads="])
+      opts, args = getopt.getopt(argv,"ho:d:i:t",["offset=","divisor=","ifile=","threads="])
    except getopt.GetoptError:
       print('TRY ingest_nc_to_ike.py -o <x offset> -d <x divisor> -i <inputfile> -t <threads>')
       sys.exit(2)
@@ -76,13 +76,13 @@ def main(argv):
          print ('ingest_nc_to_ike.py -o <x offset> -d <x divisor> -i <inputfile> -t <threads>')
          sys.exit()
       elif opt in ("-o", "--offset"):
-         x_offset= arg
+         x_offset= int(arg)
       elif opt in ("-d", "--divisor"):
-         x_divisor= arg
+         x_divisor= int(arg)
       elif opt in ("-i", "--ifile"):
          inputfile = arg
       elif opt in ("-t", "--threads"):
-         threads = arg
+         threads = int(arg)
       else:
          assert False, "unhandled option"
    print('Input file is "', inputfile)
@@ -96,17 +96,18 @@ def main(argv):
    scenario = np.array(f.variables['scenario'])
    if x_divisor > 0:
      if x_divisor < len(x):
-       x_step = len(x)/x_divisor
-       x_range = x_step * (x_offset + 1) -1;
+       x_step = int(len(x)/x_divisor)
+       x_range = x_step * (x_offset + 1);
        x_start = x_offset * x_step
        if x_range > len(x):
          x_range = len(x)
        #loop through x (long)
        print(str(x_start)+'-'+str(x_range))
        for i in range(x_start,x_range):
+         print(str(i))
          #loop through y (lat)
          #for j in range(0, len(y)):
-         call("~/apps/cli/bin/auth-tokens-refresh",shell=True)
+         #call("~/apps/cli/bin/auth-tokens-refresh",shell=True)
          #Parallel(n_jobs=threads)(delayed(createMetadata)(i,j,f,x,y) for j in range(0,len(y)))
    else:
       print("x_divisor must be greater than 0")
