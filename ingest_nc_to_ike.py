@@ -65,14 +65,15 @@ def main(argv):
    x_offset = 0
    x_divisor = 1
    inputfile =""
+   threads=1
    try:
-      opts, args = getopt.getopt(argv,"hi:o:",["offset=","divisor=","ifile="])
+      opts, args = getopt.getopt(argv,"hi:o:",["offset=","divisor=","ifile=","threads="])
    except getopt.GetoptError:
-      print('TRY ingest_nc_to_ike.py -o <x offset> -d <x divisor>')
+      print('TRY ingest_nc_to_ike.py -o <x offset> -d <x divisor> -i <inputfile> -t <threads>')
       sys.exit(2)
    for opt, arg in opts:
       if opt == '-h':
-         print ('ingest_nc_to_ike.py -o <x offset> -d <x divisor>')
+         print ('ingest_nc_to_ike.py -o <x offset> -d <x divisor> -i <inputfile> -t <threads>')
          sys.exit()
       elif opt in ("-o", "--offset"):
          x_offset= arg
@@ -80,6 +81,8 @@ def main(argv):
          x_divisor= arg
       elif opt in ("-i", "--ifile"):
          inputfile = arg
+      elif opt in ("-t", "--threads"):
+         threads = arg
       else:
          assert False, "unhandled option"
    print('Input file is "', inputfile)
@@ -104,7 +107,7 @@ def main(argv):
          #loop through y (lat)
          #for j in range(0, len(y)):
          call("~/apps/cli/bin/auth-tokens-refresh",shell=True)
-         #Parallel(n_jobs=16)(delayed(createMetadata)(i,j,f,x,y) for j in range(0,len(y)))
+         #Parallel(n_jobs=threads)(delayed(createMetadata)(i,j,f,x,y) for j in range(0,len(y)))
    else:
       print("x_divisor must be greater than 0")
 
