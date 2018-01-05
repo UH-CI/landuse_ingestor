@@ -5,7 +5,7 @@ This script is capable of serializing netcdf data in the correct format to an Ag
 Note that you will need to install all the dependencies like netcdf etc that are needed -see the top of the file for all the dependencies.  I recommend you install NetCDF with conda and use a conda virtualenv.
 
 
-To run to test use:
+To run for testing use:
 python3 ~/apps/landuse/ingest_nc_to_ike.py -n testunit3 -o 0 -d 1 -i input.nc --threads=20
 
 -n, --name : is the name to give to this dataset to distinguish from other serialized data - it will be stored as 'value.name' in the JSON metadata object
@@ -14,8 +14,8 @@ python3 ~/apps/landuse/ingest_nc_to_ike.py -n testunit3 -o 0 -d 1 -i input.nc --
 -i, --inputfile : this is the path to the inputfile - it will be copied to /tmp on each node for processing 
 -t, --threads : this is the number of python threads to use on each node
 
-Below is an example Slurm job array script that run a 5 job array:
-
+Below is an example Slurm job array script that runs a 5 job array - lets call it ingest_array.slurm:
+<pre>
 #!/bin/bash
 #SBATCH -J ingest_landuse # A single job name for the array
 #SBATCH -c 20 # Number of cores
@@ -27,4 +27,10 @@ Below is an example Slurm job array script that run a 5 job array:
 source ~/.bash_profile
 source ~/miniconda3/envs/ike-ingest/bin/activate ike-ingest
 python3 ingest_nc_to_ike.py -n testset -o $SLURM_ARRAY_TASK_ID -d 5 -i input.nc --threads=20
+</pre>
+
+To launch the job array:
+<pre>
+sbatch --array=0-4 ingest_array.slurm 
+</pre>
 
