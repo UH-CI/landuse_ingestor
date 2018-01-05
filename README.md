@@ -6,8 +6,9 @@ Note that you will need to install all the dependencies like netcdf etc that are
 
 
 To run for testing use:
+```
 python3 ingest_nc_to_ike.py -n testunit3 -o 0 -d 1 -i input.nc --threads=20
-
+```
 -n, --name : is the name to give to this dataset to distinguish from other serialized data - it will be stored as 'value.name' in the JSON metadata object
 -o, --offset : this is the ofsset to use is running in high throughput parallelization.  0 is the starting offset - the offset will increase the starting matrix index so the full matrix is covered by all child array processes
 -d, --divsor : this is the number of total jobarray jobs and this tells the script how to chop up the matrix for no-overlap processesing
