@@ -10,12 +10,12 @@ import numpy as np
 from pyproj import Proj, transform
 from joblib import Parallel, delayed
 import multiprocessing
-
+from shutil import copyfile
 
 #set projection convert from p1 to p2
 p1 = Proj(init='epsg:32604')
 p2 = Proj(init='epsg:4326')
-
+f=''
 #read the netCDF file dimensions x,y,scenario
 #f = nc.Dataset('input.nc','r+')
 #x = np.array(f.variables['x'])
@@ -40,7 +40,8 @@ body['name'] = "Landuse"
 body['schemaId'] = "8102046857967243751-242ac1110-0001-013"
 body['permissions']=[pem1,pem2,pem4]
 
-def createMetadata(i,j,f,x,y,dataset_name):
+def createMetadata(i,j,x,y,dataset_name):
+  global f
   coord = transform(p1,p2,x[i],y[j])
   js ={}
   js['name'] = dataset_name
@@ -58,10 +59,11 @@ def createMetadata(i,j,f,x,y,dataset_name):
       json.dump(body, outfile)
   #print('x: '+str(i)+',j: '+str(j))
   #print(js['recharge_scenario0']) 
-  call("~/apps/cli/bin/metadata-addupdate -F /tmp/landuse"+str(j)+".json;rm /tmp/landuse"+str(j)+".json", shell=True)
+  call("~/apps/cli/bin/metadata-addupdate -z 9a68e21e6f451e6382d988aadd346d92 -F /tmp/landuse"+str(j)+".json;rm /tmp/landuse"+str(j)+".json", shell=True)
 
 
 def main(argv):
+   global f
    x_offset = 0
    x_divisor = 1
    inputfile =""
@@ -92,8 +94,9 @@ def main(argv):
    if os.path.isfile(inputfile) != True:
      print('Input file does not exist!')
      sys.exit()
+   copyfile(inputfile, '/tmp/nc-file.nc')
    #read the netCDF file dimensions x,y,scenario
-   f = nc.Dataset(inputfile,'r+')
+   f = nc.Dataset('/tmp/nc-file.nc','r+')
    x = np.array(f.variables['x'])
    y = np.array(f.variables['y'])
    scenario = np.array(f.variables['scenario'])
@@ -110,8 +113,8 @@ def main(argv):
          print(str(i))
          #loop through y (lat)
          #for j in range(0, len(y)):
-         call("~/apps/cli/bin/auth-tokens-refresh",shell=True)
-         Parallel(n_jobs=threads)(delayed(createMetadata)(i,j,f,x,y) for j in range(0,len(y)))
+         #call("~/apps/cli/bin/auth-tokens-refresh",shell=True)
+         Parallel(n_jobs=threads)(delayed(createMetadata)(i,j,x,y,name) for j in range(0,len(y)))
    else:
       print("x_divisor must be greater than 0")
 
