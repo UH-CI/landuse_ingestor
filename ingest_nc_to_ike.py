@@ -1,5 +1,6 @@
 #!/usr/bin/python
 import json
+from functools import partial
 import subprocess
 from subprocess import call
 import sys, getopt
@@ -40,7 +41,8 @@ body['name'] = "Landuse"
 body['schemaId'] = "8102046857967243751-242ac1110-0001-013"
 body['permissions']=[pem1,pem2,pem4]
 
-def createMetadata(i,j,x,y,dataset_name):
+def createMetadata(j,i,x,y,dataset_name):
+  print('create')
   global f
   coord = transform(p1,p2,x[i],y[j])
   js ={}
@@ -57,9 +59,9 @@ def createMetadata(i,j,x,y,dataset_name):
   body['geospatial']= True;
   with open("/tmp/landuse"+str(j)+".json", 'w') as outfile:
       json.dump(body, outfile)
-  #print('x: '+str(i)+',j: '+str(j))
-  #print(js['recharge_scenario0']) 
-  call("~/apps/cli/bin/metadata-addupdate -z 9a68e21e6f451e6382d988aadd346d92 -F /tmp/landuse"+str(j)+".json;rm /tmp/landuse"+str(j)+".json", shell=True)
+  print('x: '+str(i)+',j: '+str(j))
+  print(js['recharge_scenario0']) 
+  call("~/apps/cli/bin/metadata-addupdate -z 20a4fd9136351cde7efad3c9a42ac3ca -F /tmp/landuse"+str(j)+".json;rm /tmp/landuse"+str(j)+".json", shell=True)
 
 
 def main(argv):
@@ -94,11 +96,14 @@ def main(argv):
    if os.path.isfile(inputfile) != True:
      print('Input file does not exist!')
      sys.exit()
+   print('Input file confirmed')
    copyfile(inputfile, '/tmp/nc-file.nc')
    #read the netCDF file dimensions x,y,scenario
    f = nc.Dataset('/tmp/nc-file.nc','r+')
    x = np.array(f.variables['x'])
    y = np.array(f.variables['y'])
+   print('X = ',x)
+   print('Y= ',y)
    scenario = np.array(f.variables['scenario'])
    if x_divisor > 0:
      if x_divisor < len(x):
@@ -110,13 +115,18 @@ def main(argv):
        #loop through x (long)
        print(str(x_start)+'-'+str(x_range))
        for i in range(x_start,x_range):
-         print(str(i))
+         print('X index: ',str(i))
+         pool = multiprocessing.Pool(threads)
+         partialCreateMetadata = partial(createMetadata, i=i, x=x, y=y, dataset_name=name)
+         pool.map(partialCreateMetadata,range(0,len(y))) 
          #loop through y (lat)
          #for j in range(0, len(y)):
          #call("~/apps/cli/bin/auth-tokens-refresh",shell=True)
-         Parallel(n_jobs=threads)(delayed(createMetadata)(i,j,x,y,name) for j in range(0,len(y)))
+         #Parallel(n_jobs=threads)(delayed(createMetadata)(i,j,x,y,name) for j in range(0,len(y)))
+         pool.close() #we are not adding any more processes
+         pool.join() 
    else:
-      print("x_divisor must be greater than 0")
+     print("x_divisor must be greater than 0")
 
 if __name__ == "__main__":
    main(sys.argv[1:])
