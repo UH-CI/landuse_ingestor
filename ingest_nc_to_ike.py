@@ -33,8 +33,8 @@ f=''
 #body['schemaId'] = "8102046857967243751-242ac1110-0001-013"
 #body['permissions']=[pem1,pem2,pem4]
 
-def createMetadata(j,i,x,y,dataset_name):
-  print('create')
+def createMetadata(j,i,x,y,dataset_name,token):
+  print('create['+str(i)+','+str(j)+']')
   global f
   coord = transform(p1,p2,x[i],y[j])
   js ={}
@@ -54,9 +54,8 @@ def createMetadata(j,i,x,y,dataset_name):
   body['geospatial']= True;
   with open("/tmp/landuse"+str(i)+"_"+str(j)+".json", 'w') as outfile:
       outfile.write(json.dumps(body, use_decimal=True))
-  print('x: '+str(i)+',j: '+str(j))
-  print(js['recharge_scenario0']) 
-  call("~/apps/cli/bin/metadata-addupdate -z "+token+"  -F /tmp/landuse"+str(i)+"_"+str(j)+".json;rm /tmp/landuse"+str(i)+"_"+str(j)+".json", shell=True)
+  #print('[x: '+str(i)+',j: '+str(j) +'] '+ js['recharge_scenario0']) 
+  call("~/apps/cli/bin/metadata-addupdate -z "+ token +"  -F /tmp/landuse"+str(i)+"_"+str(j)+".json;rm /tmp/landuse"+str(i)+"_"+str(j)+".json", shell=True)
 
 
 def main(argv):
@@ -67,13 +66,13 @@ def main(argv):
    threads = 1
    name = "test-set"
    try:
-      opts, args = getopt.getopt(argv,"hn:o:d:i:t",["name=","offset=","divisor=","ifile=","threads="])
+      opts, args = getopt.getopt(argv,"hn:o:d:i:t:k",["name=","offset=","divisor=","ifile=","threads=","token="])
    except getopt.GetoptError:
-      print('TRY ingest_nc_to_ike.py -n <dataset name> -o <x offset> -d <x divisor> -i <inputfile> -t <threads>')
+      print('TRY ingest_nc_to_ike.py -n <dataset name> -o <x offset> -d <x divisor> -i <inputfile> -t <threads> -k <token>')
       sys.exit(2)
    for opt, arg in opts:
       if opt == '-h':
-         print ('ingest_nc_to_ike.py -n <dataset name> -o <x offset> -d <x divisor> -i <inputfile> -t <threads>')
+         print ('ingest_nc_to_ike.py -n <dataset name> -o <x offset> -d <x divisor> -i <inputfile> -t <threads> -k <token>')
          sys.exit()
       elif opt in ("-n", "--name"):
          name= arg
@@ -101,6 +100,7 @@ def main(argv):
    y = np.array(f.variables['y'])
    print('X = ',x)
    print('Y= ',y)
+   print('TOKEN: '+ token)
    scenario = np.array(f.variables['scenario'])
    if x_divisor > 0:
      if x_divisor < len(x):
@@ -116,7 +116,7 @@ def main(argv):
        	 #result = [pool.apply(createMetadata, args=(j, i, x, y, name)) for j in range(0,len(y))]
          print('X index: ',str(i))
          pool = multiprocessing.Pool(threads)
-         partialCreateMetadata = partial(createMetadata, i=i, x=x, y=y, dataset_name=name)
+         partialCreateMetadata = partial(createMetadata, i=i, x=x, y=y, dataset_name=name, token=token)
          pool.map(partialCreateMetadata,range(0,len(y))) 
          #loop through y (lat)
          #for j in range(0, len(y)):
