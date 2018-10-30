@@ -6,13 +6,14 @@ Note that you will need to install all the dependencies like netcdf etc that are
 
 
 To run to test use:
-python3 ~/apps/landuse/ingest_nc_to_ike.py -n testunit3 -o 0 -d 1 -i input.nc --threads=20
+python3 ~/apps/landuse/ingest_nc_to_ike.py -n testunit3 -o 0 -d 1 -i input.nc --threads=20 --token=YourAgaveAPITOken
 
 -n, --name : is the name to give to this dataset to distinguish from other serialized data - it will be stored as 'value.name' in the JSON metadata object
 -o, --offset : this is the ofsset to use is running in high throughput parallelization.  0 is the starting offset - the offset will increase the starting matrix index so the full matrix is covered by all child array processes
 -d, --divsor : this is the number of total jobarray jobs and this tells the script how to chop up the matrix for no-overlap processesing
 -i, --inputfile : this is the path to the inputfile - it will be copied to /tmp on each node for processing 
 -t, --threads : this is the number of python threads to use on each node
+-k, --token : this is the Agave API Token needed for authentication to be able to insert new metadata records
 
 Below is an example Slurm job array script that run a 5 job array:
 
@@ -26,5 +27,5 @@ Below is an example Slurm job array script that run a 5 job array:
 #SBATCH -e ingest_landuse%A-%a.err # Standard error
 source ~/.bash_profile
 source ~/miniconda3/envs/ike-ingest/bin/activate ike-ingest
-python3 ingest_nc_to_ike.py -n testset -o $SLURM_ARRAY_TASK_ID -d 5 -i input.nc --threads=20
+python3 ingest_nc_to_ike.py -n testset -o $SLURM_ARRAY_TASK_ID -d 5 -i input.nc --threads=20 --token=MyAPIToken
 
