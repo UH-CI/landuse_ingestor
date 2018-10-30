@@ -12,9 +12,12 @@ from pyproj import Proj, transform
 from joblib import Parallel, delayed
 import multiprocessing
 from shutil import copyfile
-
+from decimal import *
+import simplejson as json
+getcontext().prec = 3
 #set projection convert from p1 to p2
-p1 = Proj(init='epsg:32604')
+#p1 = Proj(init='epsg:32604')
+p1 = Proj(init='epsg:26904')
 p2 = Proj(init='epsg:4326')
 f=''
 #read the netCDF file dimensions x,y,scenario
@@ -24,22 +27,11 @@ f=''
 #scenario = np.array(f.variables['scenario'])
 
 #set static json body values and permsissions
-body={}
-pem1={}
-pem1['username']= 'seanbc'
-pem1['permission']='ALL'
-pem2={}
-pem2['username']= 'jgeis'
-pem2['permission']='ALL'
-pem4={}
-pem4['username']= 'ikewai-admin'
-pem4['permission']='ALL'
-pem1['username']= 'public'
-pem1['permission']='READ'
+#body={}
 
-body['name'] = "Landuse"
-body['schemaId'] = "8102046857967243751-242ac1110-0001-013"
-body['permissions']=[pem1,pem2,pem4]
+#body['name'] = "Landuse"
+#body['schemaId'] = "8102046857967243751-242ac1110-0001-013"
+#body['permissions']=[pem1,pem2,pem4]
 
 def createMetadata(j,i,x,y,dataset_name):
   print('create')
@@ -47,21 +39,24 @@ def createMetadata(j,i,x,y,dataset_name):
   coord = transform(p1,p2,x[i],y[j])
   js ={}
   js['name'] = dataset_name
-  js['longitude'] = coord[0]
-  js['latitude'] = coord[1]
+  js['longitude'] = coord[0]+0.00033687
+  js['latitude'] = coord[1]+0.00033687
   js['x'] = i
   js['y'] = j
   #js['scenario'] = s
   js['loc'] = {"type":"Point", "coordinates":[js['longitude'],js['latitude']]}
-  js['recharge_scenario0'] = f.variables['recharge'][0,:,j,i].tolist()
-  js['recharge_scenario1'] = f.variables['recharge'][1,:,j,i].tolist()
+  js['recharge_scenario0'] = list(map(lambda x: x if x is None else round(float(x),3),f.variables['recharge'][0,:,j,i].tolist())) #list(np.around(np.array(f.variables['recharge'][0,:,j,i].tolist()),2))
+  js['recharge_scenario1'] = list(map(lambda x: x if x is None else round(float(x),3),f.variables['recharge'][1,:,j,i].tolist())) #list(np.around(np.array(f.variables['recharge'][1,:,j,i].tolist()),2))
+  body={}
+  body['name'] = "Landuse"
+  body['schemaId'] = "8102046857967243751-242ac1110-0001-013"
   body['value'] = js
   body['geospatial']= True;
-  with open("/tmp/landuse"+str(j)+".json", 'w') as outfile:
-      json.dump(body, outfile)
+  with open("/tmp/landuse"+str(i)+"_"+str(j)+".json", 'w') as outfile:
+      outfile.write(json.dumps(body, use_decimal=True))
   print('x: '+str(i)+',j: '+str(j))
   print(js['recharge_scenario0']) 
-  call("~/apps/cli/bin/metadata-addupdate -z 20a4fd9136351cde7efad3c9a42ac3ca -F /tmp/landuse"+str(j)+".json;rm /tmp/landuse"+str(j)+".json", shell=True)
+  call("~/apps/cli/bin/metadata-addupdate -z "+token+"  -F /tmp/landuse"+str(i)+"_"+str(j)+".json;rm /tmp/landuse"+str(i)+"_"+str(j)+".json", shell=True)
 
 
 def main(argv):
@@ -90,6 +85,8 @@ def main(argv):
          inputfile = arg
       elif opt in ("-t", "--threads"):
          threads = int(arg)
+      elif opt in ("-k", "--token"):
+         token = arg
       else:
          assert False, "unhandled option"
    print('Input file is "', inputfile)
@@ -97,9 +94,9 @@ def main(argv):
      print('Input file does not exist!')
      sys.exit()
    print('Input file confirmed')
-   copyfile(inputfile, '/tmp/nc-file.nc')
+   copyfile(inputfile, '/tmp/nc-file'+str(x_offset)+'.nc')
    #read the netCDF file dimensions x,y,scenario
-   f = nc.Dataset('/tmp/nc-file.nc','r+')
+   f = nc.Dataset('/tmp/nc-file'+str(x_offset)+'.nc','r+')
    x = np.array(f.variables['x'])
    y = np.array(f.variables['y'])
    print('X = ',x)
@@ -114,15 +111,18 @@ def main(argv):
          x_range = len(x)
        #loop through x (long)
        print(str(x_start)+'-'+str(x_range))
+       pool = multiprocessing.Pool(threads)
        for i in range(x_start,x_range):
+       	 #result = [pool.apply(createMetadata, args=(j, i, x, y, name)) for j in range(0,len(y))]
          print('X index: ',str(i))
          pool = multiprocessing.Pool(threads)
          partialCreateMetadata = partial(createMetadata, i=i, x=x, y=y, dataset_name=name)
          pool.map(partialCreateMetadata,range(0,len(y))) 
          #loop through y (lat)
          #for j in range(0, len(y)):
-         #call("~/apps/cli/bin/auth-tokens-refresh",shell=True)
-         #Parallel(n_jobs=threads)(delayed(createMetadata)(i,j,x,y,name) for j in range(0,len(y)))
+         #  createMetadata(i,j,name)
+	 #call("~/apps/cli/bin/auth-tokens-refresh",shell=True)
+         #resutl = Parallel(n_jobs=threads)(delayed(createMetadata)(i,j,name) for j in range(0,len(y)))
          pool.close() #we are not adding any more processes
          pool.join() 
    else:
