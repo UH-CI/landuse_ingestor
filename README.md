@@ -15,8 +15,9 @@ python3 ~/apps/landuse/ingest_nc_to_ike.py -n testunit3 -o 0 -d 1 -i input.nc --
 -t, --threads : this is the number of python threads to use on each node
 -k, --token : this is the Agave API Token needed for authentication to be able to insert new metadata records
 
-Below is an example Slurm job array script that run a 5 job array:
 
+Below is an example Slurm job array script that runs a 5 job array - lets call it ingest_array.slurm:
+```
 #!/bin/bash
 #SBATCH -J ingest_landuse # A single job name for the array
 #SBATCH -c 20 # Number of cores
@@ -28,4 +29,10 @@ Below is an example Slurm job array script that run a 5 job array:
 source ~/.bash_profile
 source ~/miniconda3/envs/ike-ingest/bin/activate ike-ingest
 python3 ingest_nc_to_ike.py -n testset -o $SLURM_ARRAY_TASK_ID -d 5 -i input.nc --threads=20 --token=MyAPIToken
+```
+
+To launch the job array:
+```
+sbatch --array=0-4 ingest_array.slurm 
+```
 
